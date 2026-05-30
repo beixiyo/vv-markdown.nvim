@@ -1,0 +1,29 @@
+name: test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        neovim: [stable, nightly]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim }}
+
+      - name: Run smoke tests
+        run: |
+          nvim --headless \
+            -c "lua vim.bo.filetype='markdown'" \
+            -c "luafile tests/test_smoke.lua" \
+            -c "qa!" 2>&1 | tee out.txt
+          grep -q "0 failed" out.txt
