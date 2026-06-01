@@ -134,6 +134,19 @@ local function install_keymaps(buf)
       if d then d.cancel(); renumber_debounces[buf] = nil end
     end,
   })
+  -- 保存前：取消待定防抖 + 同步重排，消除「debounce 在 BufWritePost 后触发，
+  -- 与 render-markdown 异步渲染竞争 treesitter 节点」的 Index out of bounds 竞态
+  vim.api.nvim_create_autocmd('BufWritePre', {
+    group = AUGROUP,
+    buffer = buf,
+    callback = function()
+      local d = renumber_debounces[buf]
+      if d then d.cancel(); renumber_debounces[buf] = nil end
+      if config.auto_renumber and not require('vv-markdown.list')._busy then
+        require('vv-markdown.list').renumber_buffer()
+      end
+    end,
+  })
 end
 
 local function remove_keymaps(buf)

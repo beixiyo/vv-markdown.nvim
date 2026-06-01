@@ -7,6 +7,7 @@
 - `guard.lua` regex 回退路径（treesitter 不可用时）：混合围栏类型（`~~~` 内含 ` ``` ` 或四反引号围栏含三反引号）导致奇偶错乱、`in_fence` 误报；改为字符+长度感知的开/闭状态机，与 `renumber_range` 逻辑对齐
 - `reindent()` 反缩进守卫用字节长度比较 `#p.indent < shiftwidth`，在 `expandtab=true` 文件中遇到 tab 缩进项（字节长 1 < shiftwidth 4）时静默拒绝；改为 `vwidth` 视觉宽度比较，并用逐字符视觉消耗正确剥离混合缩进
 - 自动重排防抖改为复用 `vv-utils.timer.debounce`（每 buffer 独立实例），去掉手搓 token 计数；`BufDelete` 时 `cancel()` 关闭 uv timer 句柄，`disable()` 时统一 cancel 所有待定 timer
+- 新增 `BufWritePre` 钩子：保存前取消待定防抖并同步重排，修复 debounce 在 `BufWritePost` 后触发、与 render-markdown 异步渲染竞争 treesitter 节点导致的 *Index out of bounds* 崩溃（`node.lua:34` 无 pcall 守卫）
 - `schedule_renumber` 回调用 `nvim_win_call` 包裹 `renumber_at`，确保 `buf_get` 的 `0` 句柄解析到正确 buffer（原来靠 `get_current_buf() ~= buf` 丢弃，用户在防抖窗口内切换 buffer 会静默漏排）
 
 ## v0.1.0
