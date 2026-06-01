@@ -26,14 +26,25 @@ local function ts_in_fence(row)
   return false
 end
 
---- regex 回退：从文件头到 row 统计 ``` / ~~~ 围栏开合
+--- regex 回退：从文件头到 row 识别围栏开合（字符感知，避免混合围栏奇偶错乱）
 local function regex_in_fence(row)
   local lines = vim.api.nvim_buf_get_lines(0, 0, row - 1, false)
-  local in_fence = false
+  local fence = nil   -- 当前开启的围栏 { char, len }；nil 表示不在围栏内
   for _, l in ipairs(lines) do
-    if l:match('^%s*```') or l:match('^%s*~~~') then in_fence = not in_fence end
+    if fence then
+      -- 在围栏内：只有同字符且长度足够、无 info string 的行才能关闭
+      local ticks, rest = l:match('^%s*([`~]+)(.*)$')
+      if ticks and ticks:sub(1, 1) == fence.char and #ticks >= fence.len and (rest:match('^%s*$') ~= nil) then
+        fence = nil
+      end
+    else
+      local ticks = l:match('^%s*([`~]+)')
+      if ticks and #ticks >= 3 then
+        fence = { char = ticks:sub(1, 1), len = #ticks }
+      end
+    end
   end
-  return in_fence
+  return fence ~= nil
 end
 
 --- row（1-based）是否在代码块内

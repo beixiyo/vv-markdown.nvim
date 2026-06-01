@@ -98,7 +98,7 @@ function M.parse(line)
 
   local indent, num, delim, space, content = line:match('^(%s*)(%d+)([.)])(%s+)(.*)$')
   if num then
-    local cb = content:match('^%[(.)%]%s') or (content:match('^%[(.)%]$') and content:match('^%[(.)%]$'))
+    local cb = content:match('^%[(.)%]%s') or content:match('^%[(.)%]$')
     return {
       kind = 'ol',
       indent = indent,
@@ -113,7 +113,7 @@ function M.parse(line)
 
   local i2, marker, sp2, c2 = line:match('^(%s*)([-*+])(%s+)(.*)$')
   if marker then
-    local cb = c2:match('^%[(.)%]%s') or (c2:match('^%[(.)%]$') and c2:match('^%[(.)%]$'))
+    local cb = c2:match('^%[(.)%]%s') or c2:match('^%[(.)%]$')
     return {
       kind = 'ul',
       indent = i2,
@@ -336,10 +336,26 @@ local function reindent(delta)
     new = indent_unit() .. line
     dcol = #indent_unit()
   else
-    local step = indent_step()
-    if #p.indent < step then return false end
-    new = line:sub(step + 1)
-    dcol = -step
+    local unit = indent_unit()
+    -- 用视觉宽度判断（避免 expandtab=true 时 tab 缩进项因字节长度 < shiftwidth 而被误阻）
+    if vwidth(p.indent) < vwidth(unit) then return false end
+    if p.indent:sub(1, #unit) == unit then
+      -- 快速路径：前缀与 indent_unit 完全匹配（同质缩进）
+      new = line:sub(#unit + 1)
+      dcol = -#unit
+    else
+      -- 混合缩进（tab 在 expandtab 文件或反之）：逐字符消耗恰好一个视觉步长
+      local ts = vim.bo.tabstop == 0 and 8 or vim.bo.tabstop
+      local target = vwidth(unit)
+      local consumed, i = 0, 1
+      while i <= #p.indent and consumed < target do
+        local c = p.indent:sub(i, i)
+        consumed = consumed + (c == '\t' and (ts - consumed % ts) or 1)
+        i = i + 1
+      end
+      new = line:sub(i)
+      dcol = -(i - 1)
+    end
   end
 
   vim.api.nvim_buf_set_lines(0, row - 1, row, false, { new })

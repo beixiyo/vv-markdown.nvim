@@ -1,6 +1,6 @@
 # vv-markdown.nvim
 
-Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选。纯 Lua 行扫描，**零必需依赖**，与 `mini.pairs` 共存，treesitter / LSP 仅作可选增强
+Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选。纯 Lua 行扫描，依赖 `vv-utils.nvim`，与 `mini.pairs` 共存，treesitter / LSP 仅作可选增强
 
 ## 功能
 
@@ -20,6 +20,7 @@ Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选�
 ## 要求
 
 - Neovim >= 0.10
+- **[vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim)**（必需）—— 防抖计时器
 - 可选 treesitter `markdown` parser —— 代码块守卫更精确，无则 regex 围栏计数回退
 - 可选 `mini.pairs` —— 非列表行 `<CR>` 回退自动配对
 - 可选 `render-markdown.nvim` —— 见下方「与 render-markdown 共存」
@@ -32,6 +33,7 @@ Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选�
 {
   'beixiyo/vv-markdown.nvim',
   ft = 'markdown',
+  dependencies = { 'beixiyo/vv-utils.nvim' },
   opts = {},   -- 见下方「配置」
 }
 ```

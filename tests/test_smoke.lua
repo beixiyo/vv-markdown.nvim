@@ -16,6 +16,9 @@ end
 local here = debug.getinfo(1, 'S').source:sub(2):gsub('tests[/\\]test_smoke%.lua$', '')
 if here == '' then here = vim.fn.getcwd() end
 vim.opt.runtimepath:append(here)
+-- vv-utils（debounce 依赖）：与本仓库同级的 sibling 目录
+local utils_root = vim.fn.fnamemodify(here:gsub('[/\\]$', ''), ':h') .. '/vv-utils.nvim'
+vim.opt.runtimepath:append(utils_root)
 
 local list = require('vv-markdown.list')
 
@@ -105,6 +108,27 @@ vim.bo.expandtab = false; vim.bo.tabstop = 4
 set({ '1. a', '\t1. x', '    9. y' }); list.renumber_at(1)
 check('R#4 tab/space same level', get(), '1. a|\t1. x|    2. y')
 vim.bo.expandtab = true; vim.bo.shiftwidth = 2
+
+-- guard.lua regex_in_fence 混合围栏类型（Bug fix: ~~~ 内 ``` 不应错误关闭围栏）
+-- 直接测 guard 模块（headless 下无 treesitter → 走 regex 路径）
+local guard = require('vv-markdown.guard')
+set({ '~~~', '```lua', '1. item', '```', '~~~', 'normal' })
+-- row=3 ("1. item") 在 ~~~ 围栏内；旧代码第 2 行 ``` 会 toggle→false，row=3 误报 false
+check('guard regex mixed-fence row-in-fence', guard.in_fence(3), true)
+-- row=6 ("normal") 在围栏外
+check('guard regex mixed-fence row-outside', guard.in_fence(6), false)
+-- 四反引号围栏内含三反引号不应被关闭
+set({ '````', '```lua', 'code', '```', '````', 'end' })
+check('guard regex 4tick-fence row-in', guard.in_fence(3), true)
+check('guard regex 4tick-fence row-out', guard.in_fence(6), false)
+
+-- reindent dedent: expandtab=true 下 tab 缩进项应能反缩进（Bug fix: vwidth guard）
+vim.bo.expandtab = true; vim.bo.shiftwidth = 2; vim.bo.tabstop = 2
+-- tab 在 expandtab buffer 里，字节长度 1 < shiftwidth 2，旧代码会 return false
+set({ '- outer', '\t- inner' }); vim.api.nvim_win_set_cursor(0, { 2, 3 })
+check('dedent tab-in-expandtab', list.dedent(), true)
+-- 反缩进后 inner 项应变成 "- inner"（去掉 tab）
+check('dedent tab-in-expandtab result', get(), '- outer|- inner')
 
 local summary = string.format('vv-markdown smoke: %d passed, %d failed', ok_count, fail_count)
 if fail_count > 0 then summary = summary .. '\n' .. table.concat(fails, '\n') end

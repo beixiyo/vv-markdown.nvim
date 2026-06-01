@@ -34,26 +34,39 @@ local defaults = {
 
 local config = defaults
 local enabled = false
-local renumber_token = {}        -- buf -> debounce token
+local renumber_debounces = {}    -- buf -> { fn, cancel }（vv-utils debounce 实例）
 
 -- ---------------------------------------------------------------------------
--- 自动重排（TextChanged 防抖）
+-- 自动重排（TextChanged 防抖，复用 vv-utils.timer.debounce）
 -- ---------------------------------------------------------------------------
+
+local function get_or_make_debounce(buf)
+  if not renumber_debounces[buf] then
+    local function do_renumber(row)
+      if not vim.api.nvim_buf_is_valid(buf) then return end
+      -- 用 win_call 保证 buf_get 里的 handle 0 解析到正确 buffer（即使用户已切走）
+      local win = vim.fn.bufwinid(buf)
+      if win == -1 then return end
+      vim.api.nvim_win_call(win, function()
+        require('vv-markdown.list').renumber_at(row)
+      end)
+    end
+
+    local wrapped, cancel = require('vv-utils.timer').debounce(
+      do_renumber,
+      function() return config.renumber_debounce end
+    )
+    renumber_debounces[buf] = { fn = wrapped, cancel = cancel }
+  end
+  return renumber_debounces[buf]
+end
 
 local function schedule_renumber(buf)
   if not config.auto_renumber then return end
   local list = require('vv-markdown.list')
   if list._busy then return end                       -- 跳过自身写入引发的 TextChanged
-
   local row = vim.api.nvim_win_get_cursor(0)[1]
-  renumber_token[buf] = (renumber_token[buf] or 0) + 1
-  local my = renumber_token[buf]
-
-  vim.defer_fn(function()
-    if renumber_token[buf] ~= my then return end
-    if not vim.api.nvim_buf_is_valid(buf) or vim.api.nvim_get_current_buf() ~= buf then return end
-    require('vv-markdown.list').renumber_at(row)
-  end, config.renumber_debounce)
+  get_or_make_debounce(buf).fn(row)
 end
 
 -- ---------------------------------------------------------------------------
@@ -112,6 +125,15 @@ local function install_keymaps(buf)
     buffer = buf,
     callback = function() schedule_renumber(buf) end,
   })
+  -- buffer 销毁时关闭 uv timer，释放句柄并清理 debounce 实例
+  vim.api.nvim_create_autocmd('BufDelete', {
+    group = AUGROUP,
+    buffer = buf,
+    callback = function()
+      local d = renumber_debounces[buf]
+      if d then d.cancel(); renumber_debounces[buf] = nil end
+    end,
+  })
 end
 
 local function remove_keymaps(buf)
@@ -158,6 +180,11 @@ end
 function M.disable()
   if not enabled then return end
   enabled = false
+  -- 取消所有待定的重排防抖 timer（关闭 uv 句柄）
+  for b, d in pairs(renumber_debounces) do
+    d.cancel()
+    renumber_debounces[b] = nil
+  end
   pcall(vim.api.nvim_del_augroup_by_name, AUGROUP)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(buf) and is_target_ft(vim.bo[buf].filetype) then
