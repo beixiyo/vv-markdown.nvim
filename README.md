@@ -16,6 +16,7 @@ Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选�
 | **勾选切换** | `[ ]` ↔ `[x]`（可配置多状态循环），normal 单行 / visual 范围 |
 | **代码块守卫** | 围栏代码块内不续行、不重排（treesitter 优先，regex 回退，标记感知） |
 | **mini.pairs 共存** | 非列表行 `<CR>` 回退 `MiniPairs.cr()`，`{}` / 引号 自动配对换行不失效 |
+| **gf 导航增强** | `[text](path#anchor)` 链接解析跳转，支持锚点定位标题，LSP（marksman）优先 |
 
 ## 要求
 
@@ -60,6 +61,7 @@ require('vv-markdown').setup({
   dedent_empty = true,          -- 空项回车反缩进（否则清空退出）
   mini_pairs_fallback = true,   -- 非列表行回退 mini.pairs
   settle_treesitter = true,     -- 编辑后同步刷新 md 树（防 render-markdown 读过期树越界）
+  gf_navigation = true,                -- 增强 gf：解析 [text](path#anchor) 链接跳转
   checkbox = { states = { ' ', 'x' } },  -- 勾选循环序列，可设 { ' ', '-', 'x' }
   keymaps = {
     continue = '<CR>',          -- insert

@@ -20,6 +20,7 @@ local defaults = {
   dedent_empty = true,
   mini_pairs_fallback = true,
   settle_treesitter = true,
+  gf_navigation = true,
   checkbox = { states = { ' ', 'x' } },
   keymaps = {
     continue = '<CR>',
@@ -119,6 +120,9 @@ local function install_keymaps(buf)
   -- 整表重排
   map('n', k.renumber, function() require('vv-markdown.list').renumber_buffer() end, 'vv-markdown: 整表重排')
 
+  -- gf 增强：支持 [text](path#anchor) 链接跳转
+  require('vv-markdown.gf').setup(buf)
+
   -- 每个 markdown buffer 挂 buffer-local TextChanged → 防抖重排
   vim.api.nvim_create_autocmd('TextChanged', {
     group = AUGROUP,
@@ -161,6 +165,7 @@ local function remove_keymaps(buf)
   del('n', k.toggle_checkbox)
   del('x', k.toggle_checkbox)
   del('n', k.renumber)
+  del('n', 'gf')
 end
 
 local function is_target_ft(ft)
@@ -218,6 +223,7 @@ function M.setup(opts)
   require('vv-markdown.list')._set_config_getter(M.get_config)
   require('vv-markdown.cr')._set_config_getter(M.get_config)
   require('vv-markdown.checkbox')._set_config_getter(M.get_config)
+  require('vv-markdown.gf')._set_config_getter(M.get_config)
 
   vim.api.nvim_create_user_command('VVMarkdownEnable', function() M.enable() end, {})
   vim.api.nvim_create_user_command('VVMarkdownDisable', function() M.disable() end, {})
@@ -257,6 +263,7 @@ end
 ---@field dedent_empty boolean          空项回车时反缩进（否则直接清空退出列表）@default true
 ---@field mini_pairs_fallback boolean   非列表行 <CR> 回退 mini.pairs 自动配对 @default true
 ---@field settle_treesitter boolean     编辑后同步刷新 md treesitter 树（防 render-markdown 读过期树越界）@default true
+---@field gf_navigation boolean         增强 gf：支持 `[text](path#anchor)` 链接跳转 @default true
 ---@field checkbox VVMarkdownCheckboxConfig
 ---@field keymaps VVMarkdownKeymaps
 

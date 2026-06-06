@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `gf_navigation`：增强 `gf` 跳转，支持 `[text](path#anchor)` 链接解析 + 锚点定位标题（LSP 优先）
+
 ### Fixed
 
 - `guard.lua` regex 回退路径（treesitter 不可用时）：混合围栏类型（`~~~` 内含 ` ``` ` 或四反引号围栏含三反引号）导致奇偶错乱、`in_fence` 误报；改为字符+长度感知的开/闭状态机，与 `renumber_range` 逻辑对齐
