@@ -17,8 +17,10 @@ function M.setup(buf)
 
     local pos = 1
     while true do
-      local s, e, path = line:find('%[.-%]%((.-)%)', pos)
+      -- %b() 平衡匹配：链接目标本身含括号（如 Plan_(2024).md）不会被首个 ) 截断
+      local s, e, group = line:find('%[.-%](%b())', pos)
       if not s then break end
+      local path = group:sub(2, -2)        -- 去掉外层 ( )
 
       if col >= s and col <= e then
         if path:match('^https?://') then break end
@@ -29,7 +31,10 @@ function M.setup(buf)
         end
 
         if file_path ~= '' then
-          local dir = vim.fn.expand('%:p:h')
+          -- 绝对路径（/ 开头）或 ~ 家目录链接不能再拼当前 buffer 目录，否则得到 <bufdir>//abs
+          local target = (file_path:sub(1, 1) == '/' or file_path:sub(1, 1) == '~')
+            and vim.fn.fnamemodify(file_path, ':p')
+            or vim.fn.expand('%:p:h') .. '/' .. file_path
 
           -- 当前窗口若开了 winfixbuf（vv-explorer / vv-git 等面板），:edit 会抛 E1513
           -- 先跳到一个普通（非锁定、非浮动）窗口再 edit，对齐 vv-git commands.lua 的处理
@@ -43,13 +48,21 @@ function M.setup(buf)
             end
           end
 
-          vim.cmd('edit ' .. vim.fn.fnameescape(dir .. '/' .. file_path))
+          vim.cmd('edit ' .. vim.fn.fnameescape(target))
         end
 
         if anchor then
-          local pattern = '^\\c#\\+.*' .. anchor:gsub('%-', '.*')
+          -- 按 '-' 分段、每段用 \V very-nomagic 并 escape 反斜杠，保留「'-' → 通配」语义，
+          -- 同时让锚点里的正则魔法字符（[ \ . 等）按字面匹配，不再炸 search() 也不过度匹配
+          local parts = {}
+          for seg in (anchor .. '-'):gmatch('(.-)%-') do
+            parts[#parts + 1] = vim.fn.escape(seg, '\\')
+          end
+          local pattern = '\\c^#\\+.*\\V' .. table.concat(parts, '\\.\\*')
           vim.fn.cursor(1, 1)
-          if vim.fn.search(pattern, 'c') == 0 then
+          -- pcall 兜底：任何残留的非法 pattern 退化为「未找到」notify，不冒泡成红色 Vim 错误
+          local ok, lnum = pcall(vim.fn.search, pattern, 'c')
+          if not ok or lnum == 0 then
             vim.notify('Heading not found: #' .. anchor, vim.log.levels.WARN)
           end
         end

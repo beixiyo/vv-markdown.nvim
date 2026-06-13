@@ -17,6 +17,13 @@ function M._set_config_getter(fn) get_config = fn end
 -- 重排期间置位，供 TextChanged handler 跳过自身写入
 M._busy = false
 
+-- 复选框内容：恰好一个 UTF-8 码点（[ ] / [x] / 自定义单字形如 [✓]）。
+-- 用「一个 ASCII 字节或一个 UTF-8 多字节序列」而非 [^%]]+，避免把多字符散文
+-- （`- [TODO] x` / `- [WIP] y` / `- [CDATA] z`）误判成复选框。
+local CB_GLYPH = '%[([\1-\127\194-\253][\128-\191]*)%]'
+local CB_PRE = '^' .. CB_GLYPH .. '%s' -- 复选框后跟空格
+local CB_EOL = '^' .. CB_GLYPH .. '$'  -- 复选框独占整段
+
 --- 编辑后同步刷新 markdown treesitter 树。
 --- 关掉「本插件编辑」造成的树过期窗口，避免 render-markdown 等监听者在调度回调里
 --- 用过期树 get_node_text 越界（render-markdown node.lua:34 未 pcall 守卫）。优雅降级：无 parser 即跳过。
@@ -98,7 +105,7 @@ function M.parse(line)
 
   local indent, num, delim, space, content = line:match('^(%s*)(%d+)([.)])(%s+)(.*)$')
   if num then
-    local cb = content:match('^%[(.)%]%s') or content:match('^%[(.)%]$')
+    local cb = content:match(CB_PRE) or content:match(CB_EOL)
     return {
       kind = 'ol',
       indent = indent,
@@ -113,7 +120,7 @@ function M.parse(line)
 
   local i2, marker, sp2, c2 = line:match('^(%s*)([-*+])(%s+)(.*)$')
   if marker then
-    local cb = c2:match('^%[(.)%]%s') or c2:match('^%[(.)%]$')
+    local cb = c2:match(CB_PRE) or c2:match(CB_EOL)
     return {
       kind = 'ul',
       indent = i2,

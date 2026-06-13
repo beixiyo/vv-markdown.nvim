@@ -123,6 +123,11 @@ local function install_keymaps(buf)
   -- gf 增强：支持 [text](path#anchor) 链接跳转
   require('vv-markdown.gf').setup(buf)
 
+  -- FileType 可能对同一 buffer 重复触发（:set ft=markdown 重设 / :edit 重载 / ftdetect 再跑）。
+  -- 先清掉本 buffer 在组里已有的同类 autocmd，避免逐次累积（每次保存重排 N 次、句柄泄漏）。
+  -- keymap 已通过 vim.keymap.set 幂等，故只清 autocmd、不动 keymap。
+  vim.api.nvim_clear_autocmds({ group = AUGROUP, buffer = buf })
+
   -- 每个 markdown buffer 挂 buffer-local TextChanged → 防抖重排
   vim.api.nvim_create_autocmd('TextChanged', {
     group = AUGROUP,
