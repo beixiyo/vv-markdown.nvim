@@ -158,10 +158,16 @@ local function find_block(row)
   -- 使「比嵌套项浅但仍在外层项内」的续行不致截断块（用 vwidth 统一 tab/space）
   local base = vwidth(M.parse(buf_get(seed)).indent)
 
-  -- 跨过连续空行看另一侧第一个非空行是否列表项（兼容 2+ 空行的 loose list）
+  -- 跨过单个空行看另一侧第一个非空行是否列表项（loose list）
+  -- 连续两个及以上空行视为块边界，避免把用户显式分开的两组列表串号
   local function blank_run_ok(r, step)
-    local k = r + step
-    while k >= 1 and k <= n and is_blank(buf_get(k)) do k = k + step end
+    local k = r
+    local blanks = 0
+    while k >= 1 and k <= n and is_blank(buf_get(k)) do
+      blanks = blanks + 1
+      if blanks >= 2 then return false end
+      k = k + step
+    end
     return k >= 1 and k <= n and M.parse(buf_get(k)) ~= nil
   end
 

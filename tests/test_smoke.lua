@@ -74,8 +74,11 @@ set({ '1. a', '9. b', '', '', 'end' });                list.renumber_at(4);    c
 -- #3 浅续行不截断嵌套
 set({ '1. top', '    9. s1', '    9. s2', '   cont', '    9. s3' }); list.renumber_at(2)
 check('R#3 shallow continuation', get(), '1. top|    1. s1|    2. s2|   cont|    3. s3')
--- #5 2 空行 loose list
-set({ '1. a', '', '', '9. b' });                       list.renumber_at(1);    check('R#5 two-blank loose', get(), '1. a|||2. b')
+-- #5 单空行 loose list 仍连续；连续两个空行断开列表块
+set({ '1. a', '', '9. b' });                           list.renumber_at(1);    check('R#5 one-blank loose', get(), '1. a||2. b')
+set({ '1. a', '', '', '9. b' });                       list.renumber_at(1);    check('R#5 two-blank boundary', get(), '1. a|||9. b')
+set({ '1. sdf', '2. sdfdsf', '3. sdf', '', '', '1. sdf', '2. ' }); list.renumber_at(6)
+check('R#5 separated ordered lists stay separate', get(), '1. sdf|2. sdfdsf|3. sdf|||1. sdf|2. ')
 -- #10 混合围栏（~~~ 内含 ```）
 set({ '1. a', '~~~md', '3. x', '```', '7. y', '~~~', '9. b' }); list.renumber_buffer()
 check('R#10 mixed fence', get(), '1. a|~~~md|3. x|```|7. y|~~~|2. b')
