@@ -1,91 +1,100 @@
-# vv-markdown.nvim
+<div align="center">
+  <h1>vv-markdown.nvim</h1>
+  <p>English | <a href="./README.zh-CN.md">中文</a></p>
+  <p>Want my Neovim config? See <a href="https://github.com/beixiyo/dotfiles">dotfiles</a></p>
+  <p>Smart Markdown list editing: continuation, incrementing, renumbering, indentation, and checkboxes</p>
+  <p>
+    <img src="https://img.shields.io/badge/Neovim-0.10+-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Requires Neovim 0.10+" />
+    <img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
+  </p>
+</div>
 
-Markdown 列表智能编辑：续行 / 自增 / 自动重排 / 缩进 / 勾选。纯 Lua 行扫描，依赖 `vv-utils.nvim`，与 `mini.pairs` 共存，treesitter / LSP 仅作可选增强
+Implemented with pure-Lua line scanning, powered by `vv-utils.nvim`, compatible with `mini.pairs`, and optionally enhanced by treesitter and LSP.
 
-## 功能
-
-| 能力 | 说明 |
-|------|------|
-| **智能续行** | insert `<CR>`：有序自增（`1.`→`2.`）、无序复制（`- * +`）、缩进保持、光标后文本下移、`1)` 风格、checkbox 项续空 `[ ]` |
-| **o / O 续行** | normal `o` / `O` 新建列表项，等价 insert `<CR>`；非列表行回退原生 |
-| **自动重排** | 删除 / 粘贴 / 撤销 / 缩进后（`TextChanged`）自动把有序列表归一为 `1,2,3`，防抖、幂等、不卡输入 |
-| **缩进签名** | 嵌套列表各层独立编号；缩进成子列表自动从 `1` 重排；tab/space 按视觉宽度归一 |
-| **空项退出** | 空列表项上回车 → 反缩进一级，或退出列表 |
-| **冒号缩进** | 行尾 `:` 回车 → 新项自动缩进一级 |
-| **缩进增减** | insert `<C-t>` / `<C-d>` 缩进 / 反缩进当前项并重排（非列表行回退原生） |
-| **勾选切换** | `[ ]` ↔ `[x]`（可配置多状态循环），normal 单行 / visual 范围 |
-| **代码块守卫** | 围栏代码块内不续行、不重排（treesitter 优先，regex 回退，标记感知） |
-| **mini.pairs 共存** | 非列表行 `<CR>` 回退 `MiniPairs.cr()`，`{}` / 引号 自动配对换行不失效 |
-| **gf 导航增强** | `[text](path#anchor)` 链接解析跳转，支持锚点定位标题，LSP（marksman）优先 |
-
-## 要求
+## Requirements
 
 - Neovim >= 0.10
-- **[vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim)**（必需）—— 防抖计时器
-- 可选 treesitter `markdown` parser —— 代码块守卫更精确，无则 regex 围栏计数回退
-- 可选 `mini.pairs` —— 非列表行 `<CR>` 回退自动配对
-- 可选 `render-markdown.nvim` —— 见下方「与 render-markdown 共存」
+- **[vv-utils.nvim](https://github.com/beixiyo/vv-utils.nvim)** is required for debounce timers
+- The treesitter `markdown` parser is optional and improves code-fence detection; otherwise a regex fence counter is used
+- `mini.pairs` is optional and receives non-list `<CR>` fallbacks
+- `render-markdown.nvim` is optional; see the compatibility section below
 
-## 安装
+## Features
 
-[lazy.nvim](https://github.com/folke/lazy.nvim)：
+| Capability | Description |
+|------------|-------------|
+| **Smart continuation** | Insert-mode `<CR>` increments ordered items (`1.` → `2.`), copies unordered markers (`-`, `*`, `+`), preserves indentation, moves trailing text to the next line, supports `1)` markers, and continues checkbox items with `[ ]` |
+| **`o` / `O` continuation** | Normal-mode `o` and `O` create list items like insert-mode `<CR>`; non-list lines retain native behavior |
+| **Automatic renumbering** | After deletion, paste, undo, or indentation changes, `TextChanged` normalizes ordered lists to `1, 2, 3`; processing is debounced, idempotent, and does not block input |
+| **Indentation signatures** | Nested levels are numbered independently; indenting into a child list restarts at `1`; tabs and spaces are normalized by visual width |
+| **Leaving an empty item** | Pressing Enter on an empty item dedents one level or exits the list |
+| **Colon indentation** | Pressing Enter after a trailing `:` indents the new item by one level |
+| **Indent and dedent** | Insert-mode `<C-t>` and `<C-d>` indent or dedent the current item and renumber it; non-list lines retain native behavior |
+| **Checkbox toggle** | Cycles `[ ]` and `[x]`, or a configurable state sequence, for one Normal-mode line or a Visual-mode range |
+| **Code-fence guard** | Continuation and renumbering are disabled inside fenced code blocks; treesitter is preferred, with a marker-aware regex fallback |
+| **`mini.pairs` compatibility** | Non-list `<CR>` falls back to `MiniPairs.cr()`, preserving paired-brace and quote newlines |
+| **Enhanced `gf` navigation** | Resolves `[text](path#anchor)` links and heading anchors, preferring an LSP such as marksman when available |
+
+## Installation
+
+[lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
   'beixiyo/vv-markdown.nvim',
   ft = 'markdown',
   dependencies = { 'beixiyo/vv-utils.nvim' },
-  opts = {},   -- 见下方「配置」
+  opts = {},   -- See Configuration below
 }
 ```
 
-`vim.pack`（Neovim 0.12+）：
+`vim.pack` on Neovim 0.12+:
 
 ```lua
 vim.pack.add({ 'https://github.com/beixiyo/vv-markdown.nvim' })
 require('vv-markdown').setup({})
 ```
 
-## 配置
+## Configuration
 
-调用 `setup()` 即生效，以下为默认值：
+Call `setup()` to enable the plugin. These are the defaults:
 
 ```lua
 require('vv-markdown').setup({
   enabled = true,
   filetypes = { 'markdown' },
-  continue = true,              -- insert <CR> 续行
-  auto_renumber = true,         -- TextChanged 后自动重排
-  renumber_debounce = 60,       -- 防抖 ms
-  colon_indent = true,          -- 行尾冒号缩进子项
-  dedent_empty = true,          -- 空项回车反缩进（否则清空退出）
-  mini_pairs_fallback = true,   -- 非列表行回退 mini.pairs
-  settle_treesitter = true,     -- 编辑后同步刷新 md 树（防 render-markdown 读过期树越界）
-  gf_navigation = true,                -- 增强 gf：解析 [text](path#anchor) 链接跳转
-  checkbox = { states = { ' ', 'x' } },  -- 勾选循环序列，可设 { ' ', '-', 'x' }
+  continue = true,              -- Continue lists with insert-mode <CR>
+  auto_renumber = true,         -- Renumber after TextChanged
+  renumber_debounce = 60,       -- Debounce delay in milliseconds
+  colon_indent = true,          -- Indent a child item after a trailing colon
+  dedent_empty = true,          -- Dedent an empty item, otherwise clear it and leave the list
+  mini_pairs_fallback = true,   -- Fall back to mini.pairs outside lists
+  settle_treesitter = true,     -- Refresh the Markdown tree after editing
+  gf_navigation = true,         -- Resolve [text](path#anchor) links with gf
+  checkbox = { states = { ' ', 'x' } }, -- May be { ' ', '-', 'x' }
   keymaps = {
-    continue = '<CR>',          -- insert
-    indent = '<C-t>',           -- insert
-    dedent = '<C-d>',           -- insert
-    open_below = 'o',           -- normal
-    open_above = 'O',           -- normal
-    toggle_checkbox = '<leader>x',  -- normal / visual
-    renumber = '<leader>nn',    -- normal，整表重排
+    continue = '<CR>',
+    indent = '<C-t>',
+    dedent = '<C-d>',
+    open_below = 'o',
+    open_above = 'O',
+    toggle_checkbox = '<leader>x',
+    renumber = '<leader>nn',
   },
 })
 ```
 
-任一 keymap 设为 `false` 即关闭。所有键均为 **buffer-local + ft=markdown**，不污染其它 filetype
+Set any keymap to `false` to disable it. Every mapping is buffer-local and limited to the `markdown` filetype.
 
-## 命令
+## Commands
 
-`:VVMarkdownEnable` / `Disable` / `Toggle`、`:VVMarkdownRenumber`、`:VVMarkdownToggleCheckbox`（支持 range）
+`:VVMarkdownEnable`, `:VVMarkdownDisable`, `:VVMarkdownToggle`, `:VVMarkdownRenumber`, and `:VVMarkdownToggleCheckbox`, which supports a range.
 
-## 与 render-markdown.nvim 共存
+## Coexisting with render-markdown.nvim
 
-render-markdown 默认 `bullet.ordered_icons` 会按 **treesitter 兄弟位置**重算有序序号的显示。本插件已在真实 buffer 维护正确编号，二者对「缩进多少算嵌套」判定可能不一致 —— 例如有序标记 `1. ` 宽度为 3，用 2 空格缩进的嵌套项 treesitter 视为扁平列表，会把 `1.` 显示成 `3.`
+By default, `render-markdown.nvim` uses `bullet.ordered_icons` to recalculate displayed numbers from treesitter sibling positions. vv-markdown keeps the correct numbers in the real buffer, and the two plugins may disagree about the indentation that creates nesting. For example, the marker `1. ` is three columns wide, so a child indented by two spaces can be parsed as a flat list and displayed as `3.`.
 
-建议让 render-markdown 直接显示原文（单一数据源）：
+Let render-markdown display the source number so the buffer remains the single source of truth:
 
 ```lua
 require('render-markdown').setup({
@@ -95,27 +104,27 @@ require('render-markdown').setup({
 })
 ```
 
-> 若希望编号在 GitHub 等外部渲染器也正确嵌套，请用 **≥ 父标记宽度**的缩进（`1. ` → 3 格，`10. ` → 4 格）
+For numbering that also nests correctly in external renderers such as GitHub, indent by at least the parent marker width: three spaces after `1. ` and four after `10. `.
 
-## 命令行测试
+## Command-line test
 
 ```sh
 nvim --headless -c "lua vim.bo.filetype='markdown'" \
   -c "luafile tests/test_smoke.lua" -c "qa!"
 ```
 
-## 已知限制
+## Known limitations
 
-- **blockquote 内列表**（`> 1. a`）暂不解析续行 / 重排
-- 序号宽度变化（`9.`→`10.`）时，**内容对齐**的续行子行缩进不自动跟随（固定缩进不受影响）
-- 自动重排在编辑后以**光标附近 ±3 行**为锚定位列表块；若编辑使光标停在离列表更远处，需手动 `<leader>nn` / `:VVMarkdownRenumber`
+- Lists inside blockquotes, such as `> 1. a`, are not currently continued or renumbered
+- When a number grows from `9.` to `10.`, continuation-line indentation aligned to the content is not adjusted automatically; fixed indentation is unaffected
+- Automatic renumbering locates the list block from an anchor within three lines of the cursor after an edit. If the cursor ends farther away, use `<leader>nn` or `:VVMarkdownRenumber`
 
-## 设计
+## Design
 
-- 续行热路径用 **regex 行扫描**（treesitter 当前编辑行 stale，不可靠）
-- 重排用**缩进签名**：以缩进视觉宽度为 key 各维护计数器，遇更浅缩进清空更深层级 → 嵌套天然独立
-- 重排**幂等**（只改差异数字片段），故由 `TextChanged` 触发也不会自激递归
-- `<CR>` 用 **buffer-local expr** 映射遮蔽 mini.pairs 全局映射，列表行走 `<Cmd>continue<CR>`、非列表行 `return MiniPairs.cr()`
+- The continuation hot path uses **regex line scanning**, because the treesitter node for the line currently being edited can be stale
+- Renumbering uses an **indentation signature**: each visual indentation width owns a counter, and entering a shallower level clears deeper counters, naturally isolating nested lists
+- Renumbering is **idempotent** and changes only differing numeric spans, so `TextChanged` cannot trigger a recursive edit loop
+- `<CR>` uses a **buffer-local expression mapping** that shadows the global `mini.pairs` mapping. List lines run the continuation command, while non-list lines return `MiniPairs.cr()`
 
 ## License
 
