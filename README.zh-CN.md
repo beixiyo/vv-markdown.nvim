@@ -9,7 +9,7 @@
   </p>
 </div>
 
-纯 Lua 行扫描，依赖 `vv-utils.nvim`，与 `mini.pairs` 共存，treesitter / LSP 仅作可选增强
+纯 Lua 行扫描，依赖 `vv-utils.nvim`，与 `mini.pairs` 共存，treesitter 仅作可选增强
 
 ## 要求
 
@@ -33,7 +33,7 @@
 | **勾选切换** | `[ ]` ↔ `[x]`（可配置多状态循环），normal 单行 / visual 范围 |
 | **代码块守卫** | 围栏代码块内不续行、不重排（treesitter 优先，regex 回退，标记感知） |
 | **mini.pairs 共存** | 非列表行 `<CR>` 回退 `MiniPairs.cr()`，`{}` / 引号 自动配对换行不失效 |
-| **gf 导航增强** | `[text](path#anchor)` 链接解析跳转，支持锚点定位标题，LSP（marksman）优先 |
+| **gf 导航增强** | 正则扫描解析 `[text](path#anchor)` 链接，打开目标文件并定位标题锚点；光标不在链接上时回退原生 `gf` |
 
 ## 安装
 

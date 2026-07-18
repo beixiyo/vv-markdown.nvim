@@ -9,7 +9,7 @@
   </p>
 </div>
 
-Implemented with pure-Lua line scanning, powered by `vv-utils.nvim`, compatible with `mini.pairs`, and optionally enhanced by treesitter and LSP.
+Implemented with pure-Lua line scanning, powered by `vv-utils.nvim`, compatible with `mini.pairs`, and optionally enhanced by treesitter.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ Implemented with pure-Lua line scanning, powered by `vv-utils.nvim`, compatible 
 | **Checkbox toggle** | Cycles `[ ]` and `[x]`, or a configurable state sequence, for one Normal-mode line or a Visual-mode range |
 | **Code-fence guard** | Continuation and renumbering are disabled inside fenced code blocks; treesitter is preferred, with a marker-aware regex fallback |
 | **`mini.pairs` compatibility** | Non-list `<CR>` falls back to `MiniPairs.cr()`, preserving paired-brace and quote newlines |
-| **Enhanced `gf` navigation** | Resolves `[text](path#anchor)` links and heading anchors, preferring an LSP such as marksman when available |
+| **Enhanced `gf` navigation** | Resolves `[text](path#anchor)` links with a regex scan, opens the target file, and locates the heading anchor; falls back to native `gf` when the cursor is not on a link |
 
 ## Installation
 
