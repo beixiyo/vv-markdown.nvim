@@ -10,7 +10,7 @@
 local M = {}
 
 -- 由 init.lua 注入的只读配置访问器（避免循环 require）
----@type fun(): VVMarkdownConfig
+---@type fun(): VVMarkdown.Config
 local get_config = function() return { colon_indent = true, dedent_empty = true } end
 function M._set_config_getter(fn) get_config = fn end
 

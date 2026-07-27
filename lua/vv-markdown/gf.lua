@@ -2,16 +2,14 @@
 
 local M = {}
 
-local config_getter ---@type fun():VVMarkdownConfig
+local config_getter ---@type fun():VVMarkdown.Config
+local handle ---@type VVKeymapHandle|nil
 
 function M._set_config_getter(fn)
   config_getter = fn
 end
 
-function M.setup(buf)
-  if not config_getter or not config_getter().gf_navigation then return end
-
-  vim.keymap.set('n', 'gf', function()
+local function open_link()
     local line = vim.api.nvim_get_current_line()
     local col = vim.api.nvim_win_get_cursor(0)[2] + 1
 
@@ -79,7 +77,26 @@ function M.setup(buf)
     if not ok then
       vim.notify('No file under cursor', vim.log.levels.WARN)
     end
-  end, { buffer = buf, desc = 'vv-markdown: gf 链接跳转' })
+end
+
+function M.enable()
+  if handle or not config_getter then return end
+
+  local config = config_getter()
+  handle = require('vv-utils.keymap').attach({
+    id = 'vv-markdown.gf',
+    filetypes = config.filetypes,
+    enabled = function() return config_getter().gf_navigation end,
+    mappings = {
+      { mode = 'n', lhs = 'gf', rhs = open_link, opts = { desc = 'vv-markdown: gf 链接跳转' } },
+    },
+  })
+end
+
+function M.disable()
+  if not handle then return end
+  handle:detach()
+  handle = nil
 end
 
 return M

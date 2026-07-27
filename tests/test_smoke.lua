@@ -133,6 +133,44 @@ check('dedent tab-in-expandtab', list.dedent(), true)
 -- 反缩进后 inner 项应变成 "- inner"（去掉 tab）
 check('dedent tab-in-expandtab result', get(), '- outer|- inner')
 
+-- gf 生命周期：FileType 切出 Markdown 时恢复原映射，且不能覆盖后来的用户重绑。
+do
+  local gf = require('vv-markdown.gf')
+  local buf = vim.api.nvim_create_buf(false, true)
+  local function set_filetype(filetype)
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd('set filetype=' .. filetype)
+    end)
+  end
+  local function local_gf_desc()
+    for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf, 'n')) do
+      if map.lhs == 'gf' then return map.desc end
+    end
+  end
+  gf._set_config_getter(function() return { gf_navigation = true, filetypes = { 'markdown' } } end)
+  vim.keymap.set('n', 'gf', '<cmd>let b:vv_markdown_old_gf = 1<cr>', {
+    buffer = buf,
+    silent = true,
+    desc = 'old gf',
+  })
+  gf.enable()
+  set_filetype('markdown')
+  check('gf 在 Markdown buffer 接管 local mapping', local_gf_desc(), 'vv-markdown: gf 链接跳转')
+  set_filetype('text')
+  check('gf 离开 Markdown 时恢复原 local mapping', local_gf_desc(), 'old gf')
+  set_filetype('markdown')
+
+  vim.keymap.set('n', 'gf', '<cmd>let b:vv_markdown_external_gf = 1<cr>', {
+    buffer = buf,
+    desc = 'external gf',
+  })
+  set_filetype('text')
+  check('gf 自动解绑时保留后来的外部映射', local_gf_desc(), 'external gf')
+  gf.disable()
+  pcall(vim.keymap.del, 'n', 'gf', { buffer = buf })
+  vim.api.nvim_buf_delete(buf, { force = true })
+end
+
 local summary = string.format('vv-markdown smoke: %d passed, %d failed', ok_count, fail_count)
 if fail_count > 0 then summary = summary .. '\n' .. table.concat(fails, '\n') end
 print(summary)

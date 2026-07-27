@@ -8,7 +8,7 @@
 
 local M = {}
 
----@type fun(): VVMarkdownConfig
+---@type fun(): VVMarkdown.Config
 local get_config = function() return { continue = true, mini_pairs_fallback = true } end
 function M._set_config_getter(fn) get_config = fn end
 

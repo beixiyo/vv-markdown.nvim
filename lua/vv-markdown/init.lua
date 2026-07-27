@@ -4,12 +4,13 @@
 --       冒号缩进子项）、删除/缩进/粘贴后自动重排有序列表、<C-t>/<C-d> 缩进增减、checkbox 切换、
 --       代码块守卫、与 mini.pairs 共存（非列表行 <CR> 回退自动配对）。
 -- 优雅降级：treesitter 仅用于代码块守卫（无则 regex 回退）；不依赖任何 LSP。
+require('vv-markdown.types')
 
 local M = {}
 
 local AUGROUP = 'VVMarkdown'
 
----@type VVMarkdownConfig
+---@type VVMarkdown.Config
 local defaults = {
   enabled = true,
   filetypes = { 'markdown' },
@@ -120,9 +121,6 @@ local function install_keymaps(buf)
   -- 整表重排
   map('n', k.renumber, function() require('vv-markdown.list').renumber_buffer() end, 'vv-markdown: 整表重排')
 
-  -- gf 增强：支持 [text](path#anchor) 链接跳转
-  require('vv-markdown.gf').setup(buf)
-
   -- FileType 可能对同一 buffer 重复触发（:set ft=markdown 重设 / :edit 重载 / ftdetect 再跑）。
   -- 先清掉本 buffer 在组里已有的同类 autocmd，避免逐次累积（每次保存重排 N 次、句柄泄漏）。
   -- keymap 已通过 vim.keymap.set 幂等，故只清 autocmd、不动 keymap。
@@ -170,7 +168,6 @@ local function remove_keymaps(buf)
   del('n', k.toggle_checkbox)
   del('x', k.toggle_checkbox)
   del('n', k.renumber)
-  del('n', 'gf')
 end
 
 local function is_target_ft(ft)
@@ -184,6 +181,7 @@ end
 function M.enable()
   if enabled then return end
   enabled = true
+  require('vv-markdown.gf').enable()
 
   vim.api.nvim_create_augroup(AUGROUP, { clear = true })
   vim.api.nvim_create_autocmd('FileType', {
@@ -203,6 +201,7 @@ end
 function M.disable()
   if not enabled then return end
   enabled = false
+  require('vv-markdown.gf').disable()
   -- 取消所有待定的重排防抖 timer（关闭 uv 句柄）
   for b, d in pairs(renumber_debounces) do
     d.cancel()
@@ -220,7 +219,7 @@ function M.toggle()
   if enabled then M.disable() else M.enable() end
 end
 
----@param opts? VVMarkdownConfig
+---@param opts? VVMarkdown.Config
 function M.setup(opts)
   config = vim.tbl_deep_extend('force', vim.deepcopy(defaults), opts or {})
 
@@ -241,35 +240,9 @@ function M.setup(opts)
   if config.enabled then M.enable() end
 end
 
----@return VVMarkdownConfig
+---@return VVMarkdown.Config
 function M.get_config()
   return vim.deepcopy(config)
 end
-
----@class VVMarkdownCheckboxConfig
----@field states string[]  勾选状态循环序列 @default { ' ', 'x' }
-
----@class VVMarkdownKeymaps
----@field continue string|false         insert 智能续行 @default '<CR>'
----@field indent string|false           insert 缩进当前项 @default '<C-t>'
----@field dedent string|false           insert 反缩进当前项 @default '<C-d>'
----@field open_below string|false       normal 下方新建列表项（等价续行）@default 'o'
----@field open_above string|false       normal 上方新建列表项 @default 'O'
----@field toggle_checkbox string|false  normal/visual 切换勾选 @default '<leader>x'
----@field renumber string|false         normal 整表重排 @default '<leader>nn'
-
----@class VVMarkdownConfig
----@field enabled boolean               是否启用 @default true
----@field filetypes string[]            生效的 filetype @default { 'markdown' }
----@field continue boolean              insert <CR> 列表续行 @default true
----@field auto_renumber boolean         删除/缩进/粘贴后自动重排有序列表 @default true
----@field renumber_debounce integer     自动重排防抖(ms) @default 60
----@field colon_indent boolean          行尾冒号时新项自动缩进一级 @default true
----@field dedent_empty boolean          空项回车时反缩进（否则直接清空退出列表）@default true
----@field mini_pairs_fallback boolean   非列表行 <CR> 回退 mini.pairs 自动配对 @default true
----@field settle_treesitter boolean     编辑后同步刷新 md treesitter 树（防 render-markdown 读过期树越界）@default true
----@field gf_navigation boolean         增强 gf：支持 `[text](path#anchor)` 链接跳转 @default true
----@field checkbox VVMarkdownCheckboxConfig
----@field keymaps VVMarkdownKeymaps
 
 return M
