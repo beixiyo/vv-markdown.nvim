@@ -21,3 +21,29 @@
 ---@field gf_navigation boolean 增强 gf：支持 `[text](path#anchor)` 链接跳转 @default true
 ---@field checkbox VVMarkdown.CheckboxConfig
 ---@field keymaps VVMarkdown.Keymaps
+
+---@class VVMarkdown.CheckboxConfigOptions
+---@field states? string[] 勾选状态循环序列 @default { ' ', 'x' }
+
+---@class VVMarkdown.KeymapsOptions
+---@field continue? string|false insert 智能续行 @default '<CR>'
+---@field indent? string|false insert 缩进当前项 @default '<C-t>'
+---@field dedent? string|false insert 反缩进当前项 @default '<C-d>'
+---@field open_below? string|false normal 下方新建列表项（等价续行）@default 'o'
+---@field open_above? string|false normal 上方新建列表项 @default 'O'
+---@field toggle_checkbox? string|false normal/visual 切换勾选 @default '<leader>x'
+---@field renumber? string|false normal 整表重排 @default '<leader>nn'
+
+---@class VVMarkdown.ConfigOptions
+---@field enabled? boolean 是否启用 @default true
+---@field filetypes? string[] 生效的 filetype @default { 'markdown' }
+---@field continue? boolean insert <CR> 列表续行 @default true
+---@field auto_renumber? boolean 删除/缩进/粘贴后自动重排有序列表 @default true
+---@field renumber_debounce? integer 自动重排防抖(ms) @default 60
+---@field colon_indent? boolean 行尾冒号时新项自动缩进一级 @default true
+---@field dedent_empty? boolean 空项回车时反缩进（否则直接清空退出列表）@default true
+---@field mini_pairs_fallback? boolean 非列表行 <CR> 回退 mini.pairs 自动配对 @default true
+---@field settle_treesitter? boolean 编辑后同步刷新 md treesitter 树 @default true
+---@field gf_navigation? boolean 增强 gf 链接跳转 @default true
+---@field checkbox? VVMarkdown.CheckboxConfigOptions
+---@field keymaps? VVMarkdown.KeymapsOptions
