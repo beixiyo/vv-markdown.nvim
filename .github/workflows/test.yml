@@ -8,6 +8,7 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         neovim: [stable, nightly]
@@ -20,10 +21,5 @@ jobs:
           neovim: true
           version: ${{ matrix.neovim }}
 
-      - name: Run smoke tests
-        run: |
-          nvim --headless \
-            -c "lua vim.bo.filetype='markdown'" \
-            -c "luafile tests/test_smoke.lua" \
-            -c "qa!" 2>&1 | tee out.txt
-          grep -q "0 failed" out.txt
+      - name: Run tests with the isolated entrypoint
+        run: ./tests/run.sh

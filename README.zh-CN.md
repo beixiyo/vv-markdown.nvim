@@ -106,12 +106,28 @@ require('render-markdown').setup({
 
 > 若希望编号在 GitHub 等外部渲染器也正确嵌套，请用 **≥ 父标记宽度**的缩进（`1. ` → 3 格，`10. ` → 4 格）
 
-## 命令行测试
+## 开发测试
 
 ```sh
-nvim --headless -c "lua vim.bo.filetype='markdown'" \
-  -c "luafile tests/test_smoke.lua" -c "qa!"
+./tests/run.sh
+./tests/run.sh '过滤词'
+# 可选：指定 Neovim
+NVIM_BIN=/path/to/nvim ./tests/run.sh
 ```
+
+仅支持 Unix-like 系统；要求 Neovim 0.12+（建议使用 0.12 稳定版）、Git 和 POSIX shell
+直接运行 `./tests/run.sh`，首次自动准备固定版本 vv-utils（`ed9b6ae`）与 mini.test 源码，
+不要求兄弟仓库、个人 Neovim 配置或预装 parser。依赖保存在 `VV_TEST_DEPS_CACHE`，
+默认 `$XDG_CACHE_HOME/nvim-test-deps` 或 `~/.cache/nvim-test-deps`；缓存齐全后可离线运行
+`VV_UTILS` 可显式覆盖共享源码路径；`NVIM_BIN` 默认 `nvim`。过滤词按文件路径或中文用例名
+做字面子串匹配，无匹配视为失败。入口不安装系统工具
+
+每个具名 case 启动全新子 Neovim，不读取个人配置；cwd、HOME、XDG 与临时文件都位于独立 `/tmp`
+父 hook 在断言失败时仍停止子进程并清理 fixture；scheduled 回调异常单独收集后断言
+headless 状态验证不能替代真实终端的视觉和鼠标验证
+
+覆盖列表解析编辑、嵌套重排、围栏正则回退、勾选状态与键位生命周期
+本套件不要求可选 mini.pairs 或 markdown treesitter parser
 
 ## 已知限制
 

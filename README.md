@@ -106,12 +106,31 @@ require('render-markdown').setup({
 
 For numbering that also nests correctly in external renderers such as GitHub, indent by at least the parent marker width: three spaces after `1. ` and four after `10. `.
 
-## Command-line test
+## Development tests
 
 ```sh
-nvim --headless -c "lua vim.bo.filetype='markdown'" \
-  -c "luafile tests/test_smoke.lua" -c "qa!"
+./tests/run.sh
+./tests/run.sh 'FILTER'
+# Optional Neovim override
+NVIM_BIN=/path/to/nvim ./tests/run.sh
 ```
+
+Unix-like systems only; requires Neovim 0.12+ (0.12 stable recommended), Git and POSIX shell.
+`./tests/run.sh` prepares pinned vv-utils (`ed9b6ae`) and mini.test sources on first use;
+no sibling checkout, personal Neovim configuration or parser installation is required.
+Dependencies are cached under `VV_TEST_DEPS_CACHE` (default: `$XDG_CACHE_HOME/nvim-test-deps`
+or `~/.cache/nvim-test-deps`); later runs work offline with a populated cache.
+`VV_UTILS` optionally overrides the shared source checkout; `NVIM_BIN` defaults to `nvim`.
+The optional filter matches a literal substring of the file path or Chinese case name;
+no matches fails. The entrypoint does not install system tools.
+
+Each named case starts a fresh child Neovim without personal configuration, with cwd, HOME,
+XDG directories and temporary fixtures under an independent `/tmp` directory. Parent hooks stop the
+child and remove fixtures even after assertion failures; scheduled callback errors are asserted separately.
+Headless state checks do not replace visual or mouse validation in a real terminal.
+
+Tests cover list parsing and edits, nested renumbering, fence regex fallback, checkbox states and mapping lifecycle.
+Optional mini.pairs and markdown treesitter parsers are not required by this suite.
 
 ## Known limitations
 
