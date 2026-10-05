@@ -21,5 +21,15 @@ jobs:
           neovim: true
           version: ${{ matrix.neovim }}
 
+      # Development dependency; set VV_TEST_UTILS_REV to a published commit/tag to pin it.
+      - name: Check out shared test infrastructure
+        uses: actions/checkout@v4
+        with:
+          repository: beixiyo/vv-utils.nvim
+          ref: ${{ vars.VV_TEST_UTILS_REV || 'main' }}
+          path: .test-deps/vv-utils.nvim
+
       - name: Run tests with the isolated entrypoint
+        env:
+          VV_UTILS: ${{ github.workspace }}/.test-deps/vv-utils.nvim
         run: ./tests/run.sh

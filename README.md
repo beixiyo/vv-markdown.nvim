@@ -51,7 +51,10 @@ Implemented with pure-Lua line scanning, powered by `vv-utils.nvim`, compatible 
 `vim.pack` on Neovim 0.12+:
 
 ```lua
-vim.pack.add({ 'https://github.com/beixiyo/vv-markdown.nvim' })
+vim.pack.add({
+  'https://github.com/beixiyo/vv-utils.nvim',
+  'https://github.com/beixiyo/vv-markdown.nvim',
+})
 require('vv-markdown').setup({})
 ```
 
@@ -109,28 +112,14 @@ For numbering that also nests correctly in external renderers such as GitHub, in
 ## Development tests
 
 ```sh
-./tests/run.sh
-./tests/run.sh 'FILTER'
-# Optional Neovim override
-NVIM_BIN=/path/to/nvim ./tests/run.sh
+./tests/run.sh [literal-filter]
 ```
 
-Unix-like systems only; requires Neovim 0.12+ (0.12 stable recommended), Git and POSIX shell.
-`./tests/run.sh` prepares pinned vv-utils (`ed9b6ae`) and mini.test sources on first use;
-no sibling checkout, personal Neovim configuration or parser installation is required.
-Dependencies are cached under `VV_TEST_DEPS_CACHE` (default: `$XDG_CACHE_HOME/nvim-test-deps`
-or `~/.cache/nvim-test-deps`); later runs work offline with a populated cache.
-`VV_UTILS` optionally overrides the shared source checkout; `NVIM_BIN` defaults to `nvim`.
-The optional filter matches a literal substring of the file path or Chinese case name;
-no matches fails. The entrypoint does not install system tools.
-
-Each named case starts a fresh child Neovim without personal configuration, with cwd, HOME,
-XDG directories and temporary fixtures under an independent `/tmp` directory. Parent hooks stop the
-child and remove fixtures even after assertion failures; scheduled callback errors are asserted separately.
-Headless state checks do not replace visual or mouse validation in a real terminal.
-
-Tests cover list parsing and edits, nested renumbering, fence regex fallback, checkbox states and mapping lifecycle.
-Optional mini.pairs and markdown treesitter parsers are not required by this suite.
+Requires Unix-like OS, Neovim 0.12+, Git, POSIX shell and an existing vv-utils checkout.
+Sources are discovered from the development workspace or installed plugins; `VV_UTILS` overrides discovery and `NVIM_BIN` selects Neovim. No vv plugin sources are downloaded.
+The suite exercises regex fence fallback; optional mini.pairs and markdown treesitter parsers are not required.
+Tests use isolated children; headless checks do not replace real TUI validation.
+See the [shared test contract](https://github.com/beixiyo/vv-utils.nvim/blob/main/dev/test/README.md) for discovery, literal filters, isolation and CI prerequisites.
 
 ## Known limitations
 
